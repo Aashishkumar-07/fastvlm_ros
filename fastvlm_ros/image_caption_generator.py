@@ -14,11 +14,12 @@ class FastVLMNode(Node):
         self.bridge = CvBridge()
         
         self.current_image = None
+
         # Need to add this as parameter
-        # Seconds between captions
-        self.caption_interval = 8.0  
+        self.caption_interval = 8.0   # Seconds between captions
         
-        load_model()
+        # Need to add this as parameter
+        load_model("~/Desktop/checkpoints/llava-fastvithd_1.5b_stage3")
 
         # Subscribers
         self.image_sub = self.create_subscription(
