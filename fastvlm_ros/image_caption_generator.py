@@ -3,6 +3,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from cv_bridge import CvBridge
 from rclpy.node import Node
+from pathlib import Path
 import rclpy
 
 class FastVLMNode(Node):
@@ -19,7 +20,8 @@ class FastVLMNode(Node):
         self.caption_interval = 8.0   # Seconds between captions
         
         # Need to add this as parameter
-        load_model("~/Desktop/checkpoints/llava-fastvithd_1.5b_stage3")
+        model_path = Path("~/Desktop/checkpoints/llava-fastvithd_1.5b_stage3").expanduser()
+        load_model(model_path)
 
         # Subscribers
         self.image_sub = self.create_subscription(
