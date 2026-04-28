@@ -10,23 +10,30 @@ class FastVLMNode(Node):
     def __init__(self):
         super().__init__('fastvlm_caption_node')
         self.get_logger().info('FastVLM Caption Node Starting...')
+
+        # Declare parameters
+        self.declare_parameter('image_topic', '/camera/image_raw')
+        self.declare_parameter('caption_topic', '/visual_memory/caption')
+        self.declare_parameter('caption_interval', 3.0)
+        self.declare_parameter('model_path', '~/Desktop/checkpoints/llava-fastvithd_1.5b_stage3')
+
+        # Get parameters
+        self.image_topic = self.get_parameter('image_topic').value
+        self.caption_topic = self.get_parameter('caption_topic').value
+        self.caption_interval = self.get_parameter('caption_interval').value
+        model_path_str = self.get_parameter('model_path').value
+        self.model_path = Path(model_path_str).expanduser()
         
-        self.caption_pub = self.create_publisher(String, '/visual_memory/caption', 10)
+        # Setup
         self.bridge = CvBridge()
-        
         self.current_image = None
-
-        # Need to add this as parameter
-        self.caption_interval = 8.0   # Seconds between captions
         
-        # Need to add this as parameter
-        model_path = Path("~/Desktop/checkpoints/llava-fastvithd_1.5b_stage3").expanduser()
-        load_model(model_path)
+        load_model(self.model_path)
 
-        # Subscribers
-        self.image_sub = self.create_subscription(
-            Image, '/camera/image_raw', self.image_callback, 10)
-        
+        # Publishers & Subscribers
+        self.caption_pub = self.create_publisher(String, self.caption_topic, 10)
+        self.image_sub = self.create_subscription(Image, self.image_topic, self.image_callback, 10)
+
         # Timer for periodic captioning (handles rate limiting)
         self.timer = self.create_timer(self.caption_interval, self.caption_timer_callback)
         
