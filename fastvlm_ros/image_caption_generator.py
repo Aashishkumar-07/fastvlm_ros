@@ -1,3 +1,4 @@
+from my_robot_interfaces.srv import GenerateCaption
 from predict import load_model ,generate_caption
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
@@ -30,9 +31,10 @@ class FastVLMNode(Node):
         
         load_model(self.model_path)
 
-        # Publishers & Subscribers
+        # Publishers & Subscribers & Services
         self.caption_pub = self.create_publisher(String, self.caption_topic, 10)
         self.image_sub = self.create_subscription(Image, self.image_topic, self.image_callback, 10)
+        self.caption_generation_server = self.create_service(GenerateCaption,'generate_caption',self.handle_generate_caption)
 
         # Timer for periodic captioning (handles rate limiting)
         self.timer = self.create_timer(self.caption_interval, self.caption_timer_callback)
@@ -63,6 +65,23 @@ class FastVLMNode(Node):
         except Exception as e:
             self.get_logger().error(f'Caption generation failed: {e}')
             return None
+
+    def handle_generate_caption(self, request:GenerateCaption.Request, response:GenerateCaption.Response):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(request.image, desired_encoding='rgb8')
+            caption = self.generate_caption(cv_image)
+            if caption:
+                self.get_logger().debug(f'Caption: {caption[:30]}...')
+                response.caption = caption
+            else:
+                self.get_logger().warn('Caption generation returned None')
+                response.caption = ""
+            return response
+
+        except Exception as error:
+            self.get_logger().error(f"Error in generate_caption: {error}")
+            response.caption = ""
+            return response
 
 def main(args=None):
     rclpy.init(args=args)
